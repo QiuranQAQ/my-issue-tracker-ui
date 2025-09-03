@@ -1,12 +1,9 @@
 // src/IssueListPage.tsx
-
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Button, Text, Heading, TextInput } from '@primer/react';
-import { IssueOpenedIcon } from '@primer/octicons-react';
-import ReactMarkdown from 'react-markdown';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Box, Button, Text, Heading, TextInput, Link, Tooltip } from '@primer/react';
+import { IssueOpenedIcon, ImageIcon } from '@primer/octicons-react';
 
-// 从环境变量读取 Worker URL
 const WORKER_URL = import.meta.env.VITE_WORKER_URL;
 
 interface Issue {
@@ -15,6 +12,12 @@ interface Issue {
   body: string;
   createdAt: string;
 }
+
+// 一个简单的函数来检查 issue body 是否包含 markdown 图片
+const containsImage = (text: string): boolean => {
+  const imageRegex = /!\[.*?\]\(.*?\)/;
+  return imageRegex.test(text);
+};
 
 export function IssueListPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -31,7 +34,6 @@ export function IssueListPage() {
       const response = await fetch(`${WORKER_URL}/api/issues`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      // FIX 1 & 2: 为 a 和 b 添加明确的 Issue 类型
       setIssues(data.sort((a: Issue, b: Issue) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch (error) {
       console.error("Failed to fetch issues:", error);
@@ -41,7 +43,8 @@ export function IssueListPage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1200, margin: '2rem auto', padding: '0 1rem' }}>
+    // FIX: 使用响应式内边距 px: [2, 3, 4]
+    <Box sx={{ maxWidth: 1200, margin: '2rem auto', px: [2, 3, 4] }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ flexGrow: 1, mr: 3 }}>
           <TextInput
@@ -79,19 +82,25 @@ export function IssueListPage() {
             key={issue.id}
             sx={{ display: 'flex', p: 2, borderTop: '1px solid', borderColor: 'border.default', '&:first-of-type': { borderTop: 'none' } }}
           >
-            <Box sx={{ mr: 2, color: 'success.fg' }}>
+            <Box sx={{ mr: 2, color: 'success.fg', mt: '2px' }}>
               <IssueOpenedIcon size={16} />
             </Box>
             <Box>
-              {/* FIX 3 & 4: 使用 Box as="h3" 替代 Heading，避免类型冲突 */}
-              <Box as="h3" sx={{ fontSize: 2, fontWeight: 'bold', mb: 1, margin: 0 }}>
-                {issue.title}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {/* FIX: 将标题变成指向详情页的链接 */}
+                <Link as={RouterLink} to={`/issues/${issue.id}`} sx={{ fontWeight: 'bold', color: 'fg.default', '&:hover': { color: 'accent.fg' } }}>
+                  {issue.title}
+                </Link>
+                {/* FIX: 如果包含图片，则显示图标 */}
+                {containsImage(issue.body) && (
+                  <Tooltip text="Contains images">
+                    <ImageIcon size={16} />
+                  </Tooltip>
+                )}
               </Box>
-              <Box sx={{ fontSize: 1, color: 'fg.muted', maxHeight: '4.5em', overflow: 'hidden' }}>
-                 <ReactMarkdown>{issue.body.length > 300 ? `${issue.body.substring(0, 300)}...` : issue.body}</ReactMarkdown>
-              </Box>
-              <Text sx={{ fontSize: 0, color: 'fg.subtle', mt: 1 }}>
-                Opened on {new Date(issue.createdAt).toLocaleString()}
+              {/* FIX: 不再渲染 Markdown，只显示纯文本摘要 */}
+              <Text sx={{ fontSize: 1, color: 'fg.muted', display: 'block', mt: 1 }}>
+                #{issue.id.substring(0, 6)} opened on {new Date(issue.createdAt).toLocaleDateString()}
               </Text>
             </Box>
           </Box>

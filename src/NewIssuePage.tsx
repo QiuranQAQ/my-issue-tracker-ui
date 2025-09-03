@@ -1,8 +1,6 @@
 // src/NewIssuePage.tsx
-
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-// 导入 UnderlineNav
 import { Box, Button, TextInput, Text, Textarea, Avatar, UnderlineNav } from '@primer/react';
 import ReactMarkdown from 'react-markdown';
 
@@ -18,6 +16,7 @@ export function NewIssuePage() {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
+    // ... (handleSubmit 函数保持不变)
     if (!title.trim() || !body.trim()) {
       alert('Title and description are required.');
       return;
@@ -39,6 +38,7 @@ export function NewIssuePage() {
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    // ... (handleImageUpload 函数保持不变)
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -50,8 +50,8 @@ export function NewIssuePage() {
       const response = await fetch(`${WORKER_URL}/upload`, { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Upload failed');
       const { url } = await response.json();
-      const markdownImage = `![${file.name}](${url})`;
-      setBody((prevBody) => `${prevBody}\n${markdownImage}`);
+      const markdownImage = `\n![${file.name}](${url})\n`;
+      setBody((prevBody) => `${prevBody}${markdownImage}`);
     } catch (error) {
       console.error('Image upload failed:', error);
       alert('Image upload failed!');
@@ -62,17 +62,20 @@ export function NewIssuePage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 900, margin: '2rem auto', padding: '0 1rem', display: 'flex', gap: 3 }}>
-        <Box>
+    // FIX: 使用响应式内边距 px: [2, 3, 4]
+    <Box sx={{ maxWidth: 900, margin: '2rem auto', px: [2, 3, 4], display: 'flex', gap: 3 }}>
+        <Box sx={{ display: ['none', 'block'] }}> {/* 在小屏幕上隐藏头像 */}
             <Avatar src="https://github.com/github.png" size={40} />
         </Box>
         <Box sx={{ flexGrow: 1, position: 'relative' }}>
         <Box sx={{
+          display: ['none', 'block'], // 在小屏幕上隐藏三角
           position: 'absolute', top: '10px', left: '-8px', width: 0, height: 0,
           borderTop: '8px solid transparent', borderBottom: '8px solid transparent',
           borderRight: '8px solid', borderRightColor: 'border.default',
         }}/>
         <Box sx={{
+            display: ['none', 'block'],
             position: 'absolute', top: '11px', left: '-6px', width: 0, height: 0,
             borderTop: '7px solid transparent', borderBottom: '7px solid transparent',
             borderRight: '7px solid', borderRightColor: 'canvas.default',
@@ -90,10 +93,6 @@ export function NewIssuePage() {
                     />
                 </Box>
                 <Box sx={{ borderTop: '1px solid', borderColor: 'border.default' }}>
-                    {/* 
-                      FIX: 使用 UnderlineNav.Item 替代 UnderlineNav.Link
-                      并使用 aria-current="page" 来表示选中状态，这是更标准的做法
-                    */}
                     <UnderlineNav aria-label="Main">
                         <UnderlineNav.Item 
                           aria-current={selectedTab === 'write' ? 'page' : undefined} 
@@ -115,7 +114,14 @@ export function NewIssuePage() {
                                 placeholder="Type your description here..."
                             />
                         ) : (
-                            <Box className="markdown-body" sx={{ minHeight: '200px' }}>
+                            // FIX: 修复图片溢出
+                            <Box 
+                              className="markdown-body" 
+                              sx={{ 
+                                minHeight: '200px',
+                                '& img': { maxWidth: '100%', height: 'auto' } 
+                              }}
+                            >
                                 {body.trim() ? <ReactMarkdown>{body}</ReactMarkdown> : <Text sx={{ color: 'fg.muted' }}>Nothing to preview</Text>}
                             </Box>
                         )}
